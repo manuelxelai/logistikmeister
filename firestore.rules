@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidMeisterRank(rank) {
+      return rank in [
+        'Lagerhelfer',
+        'Fachkraft für Lagerlogistik',
+        'Schichtführer',
+        'Logistik-Koordinator',
+        'Geprüfter Logistikmeister (SIHK)'
+      ];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.xp is int && data.xp >= 0 && data.xp <= 10000000 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 36500 &&
+             data.longestStreak is int && data.longestStreak >= 0 && data.longestStreak <= 36500 &&
+             data.dailyGoalMinutes is int && data.dailyGoalMinutes >= 5 && data.dailyGoalMinutes <= 240 &&
+             data.todayMinutes is int && data.todayMinutes >= 0 && data.todayMinutes <= 1440 &&
+             data.lastActiveDate is string && data.lastActiveDate.size() >= 8 && data.lastActiveDate.size() <= 20 &&
+             data.meisterRank is string && isValidMeisterRank(data.meisterRank) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidLessonProgress(data) {
+      return data.lessonId is string && isValidId(data.lessonId) &&
+             data.moduleCode in ['BQ', 'HQ', 'SA'] &&
+             data.topicId is string && data.topicId.size() >= 1 && data.topicId.size() <= 80 &&
+             data.completed is bool &&
+             data.xpEarned is int && data.xpEarned >= 0 && data.xpEarned <= 10000 &&
+             data.masteryPercent is int && data.masteryPercent >= 0 && data.masteryPercent <= 100 &&
+             data.errorCount is int && data.errorCount >= 0 && data.errorCount <= 1000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFormulaMastery(data) {
+      return data.formulaId is string && isValidId(data.formulaId) &&
+             data.formulaName is string && data.formulaName.size() >= 1 && data.formulaName.size() <= 120 &&
+             data.category in ['BQ', 'HQ'] &&
+             data.solvedCount is int && data.solvedCount >= 0 && data.solvedCount <= 100000 &&
+             data.dojoStreak is int && data.dojoStreak >= 0 && data.dojoStreak <= 10000 &&
+             data.lastResultCorrect is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidExamAttempt(data) {
+      return data.examMode in ['BQ', 'HQ', 'FACHGESPRAECH'] &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.scenarioSummary is string && data.scenarioSummary.size() >= 1 && data.scenarioSummary.size() <= 2000 &&
+             data.achievedPoints is int && data.achievedPoints >= 0 && data.achievedPoints <= 100 &&
+             data.maxPoints is int && data.maxPoints == 100 &&
+             data.ihkGrade is int && data.ihkGrade >= 1 && data.ihkGrade <= 6 &&
+             data.passed is bool &&
+             data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 480 &&
+             data.feedbackSummary is string && data.feedbackSummary.size() >= 1 && data.feedbackSummary.size() <= 4000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidWeaknessItem(data) {
+      return data.topicId is string && data.topicId.size() >= 1 && data.topicId.size() <= 80 &&
+             data.questionKey is string && data.questionKey.size() >= 1 && data.questionKey.size() <= 120 &&
+             data.promptPreview is string && data.promptPreview.size() >= 1 && data.promptPreview.size() <= 300 &&
+             data.wrongCount is int && data.wrongCount >= 1 && data.wrongCount <= 1000 &&
+             data.resolved is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'xp', 'streakDays', 'longestStreak', 'dailyGoalMinutes', 'todayMinutes', 'lastActiveDate', 'meisterRank', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'xp', 'streakDays', 'longestStreak', 'dailyGoalMinutes', 'todayMinutes', 'lastActiveDate', 'meisterRank', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'xp', 'streakDays', 'longestStreak', 'dailyGoalMinutes', 'todayMinutes', 'lastActiveDate', 'meisterRank', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /lessonProgress/{lessonId} {
+        allow get: if isOwner(userId) && isValidId(lessonId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(lessonId) &&
+                         incoming().lessonId == lessonId &&
+                         incoming().keys().hasAll(['lessonId', 'moduleCode', 'topicId', 'completed', 'xpEarned', 'masteryPercent', 'errorCount', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['lessonId', 'moduleCode', 'topicId', 'completed', 'xpEarned', 'masteryPercent', 'errorCount', 'createdAt', 'updatedAt']) &&
+                         isValidLessonProgress(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(lessonId) &&
+                         isValidLessonProgress(incoming()) &&
+                         incoming().lessonId == existing().lessonId &&
+                         incoming().moduleCode == existing().moduleCode &&
+                         incoming().topicId == existing().topicId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'xpEarned', 'masteryPercent', 'errorCount', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(lessonId);
+      }
+
+      match /formulaMastery/{formulaId} {
+        allow get: if isOwner(userId) && isValidId(formulaId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(formulaId) &&
+                         incoming().formulaId == formulaId &&
+                         incoming().keys().hasAll(['formulaId', 'formulaName', 'category', 'solvedCount', 'dojoStreak', 'lastResultCorrect', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['formulaId', 'formulaName', 'category', 'solvedCount', 'dojoStreak', 'lastResultCorrect', 'createdAt', 'updatedAt']) &&
+                         isValidFormulaMastery(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(formulaId) &&
+                         isValidFormulaMastery(incoming()) &&
+                         incoming().formulaId == existing().formulaId &&
+                         incoming().category == existing().category &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['formulaName', 'solvedCount', 'dojoStreak', 'lastResultCorrect', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(formulaId);
+      }
+
+      match /examAttempts/{attemptId} {
+        allow get: if isOwner(userId) && isValidId(attemptId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(attemptId) &&
+                         incoming().keys().hasAll(['examMode', 'title', 'scenarioSummary', 'achievedPoints', 'maxPoints', 'ihkGrade', 'passed', 'durationMinutes', 'feedbackSummary', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['examMode', 'title', 'scenarioSummary', 'achievedPoints', 'maxPoints', 'ihkGrade', 'passed', 'durationMinutes', 'feedbackSummary', 'createdAt', 'updatedAt']) &&
+                         isValidExamAttempt(incoming());
+
+        // Terminal locking: exam results are immutable after submission
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(attemptId);
+      }
+
+      match /weaknesses/{weaknessId} {
+        allow get: if isOwner(userId) && isValidId(weaknessId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(weaknessId) &&
+                         incoming().keys().hasAll(['topicId', 'questionKey', 'promptPreview', 'wrongCount', 'resolved', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['topicId', 'questionKey', 'promptPreview', 'wrongCount', 'resolved', 'createdAt', 'updatedAt']) &&
+                         isValidWeaknessItem(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(weaknessId) &&
+                         isValidWeaknessItem(incoming()) &&
+                         incoming().topicId == existing().topicId &&
+                         incoming().questionKey == existing().questionKey &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['promptPreview', 'wrongCount', 'resolved', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(weaknessId);
+      }
+    }
+  }
+}

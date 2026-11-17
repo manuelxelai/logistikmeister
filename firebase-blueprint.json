@@ -1,0 +1,331 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Learner profile tracking XP, daily streaks, daily study minutes, and SIHK Meister rank.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the learner."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name shown in the dashboard."
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Total accumulated experience points."
+        },
+        "streakDays": {
+          "type": "integer",
+          "description": "Current consecutive learning days."
+        },
+        "longestStreak": {
+          "type": "integer",
+          "description": "Longest achieved streak in days."
+        },
+        "dailyGoalMinutes": {
+          "type": "integer",
+          "description": "Configured daily micro-learning target in minutes."
+        },
+        "todayMinutes": {
+          "type": "integer",
+          "description": "Minutes trained on the current active date."
+        },
+        "lastActiveDate": {
+          "type": "string",
+          "description": "ISO date YYYY-MM-DD of the most recent learning activity."
+        },
+        "meisterRank": {
+          "type": "string",
+          "description": "Current gamified Meister rank.",
+          "enum": [
+            "Lagerhelfer",
+            "Fachkraft für Lagerlogistik",
+            "Schichtführer",
+            "Logistik-Koordinator",
+            "Geprüfter Logistikmeister (SIHK)"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "xp",
+        "streakDays",
+        "longestStreak",
+        "dailyGoalMinutes",
+        "todayMinutes",
+        "lastActiveDate",
+        "meisterRank",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LessonProgress": {
+      "title": "LessonProgress",
+      "description": "Progress and mastery state for an individual BQ, HQ, or SA micro-learning lesson.",
+      "type": "object",
+      "properties": {
+        "lessonId": {
+          "type": "string",
+          "description": "Stable curriculum lesson identifier."
+        },
+        "moduleCode": {
+          "type": "string",
+          "description": "SIHK curriculum module code.",
+          "enum": ["BQ", "HQ", "SA"]
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Handlungsbereich or subject identifier."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the lesson has been completed."
+        },
+        "xpEarned": {
+          "type": "integer",
+          "description": "XP awarded from this lesson."
+        },
+        "masteryPercent": {
+          "type": "integer",
+          "description": "Mastery percentage from 0 to 100."
+        },
+        "errorCount": {
+          "type": "integer",
+          "description": "Number of errors recorded for Smart Review."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "lessonId",
+        "moduleCode",
+        "topicId",
+        "completed",
+        "xpEarned",
+        "masteryPercent",
+        "errorCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FormulaMastery": {
+      "title": "FormulaMastery",
+      "description": "Tracks solved exercises and Rechen-Dojo streak per IHK logistics formula.",
+      "type": "object",
+      "properties": {
+        "formulaId": {
+          "type": "string",
+          "description": "Formula identifier (e.g., lagerumschlag, andler)."
+        },
+        "formulaName": {
+          "type": "string",
+          "description": "Human-readable German formula title."
+        },
+        "category": {
+          "type": "string",
+          "description": "Curriculum category of the formula.",
+          "enum": ["BQ", "HQ"]
+        },
+        "solvedCount": {
+          "type": "integer",
+          "description": "Total solved Dojo problems for this formula."
+        },
+        "dojoStreak": {
+          "type": "integer",
+          "description": "Consecutive correct solutions in Rechen-Dojo."
+        },
+        "lastResultCorrect": {
+          "type": "boolean",
+          "description": "Whether the latest Dojo attempt was correct."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "formulaId",
+        "formulaName",
+        "category",
+        "solvedCount",
+        "dojoStreak",
+        "lastResultCorrect",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ExamAttempt": {
+      "title": "ExamAttempt",
+      "description": "Completed SIHK written exam simulation or oral Fachgespräch attempt scored on the 100-point IHK scale.",
+      "type": "object",
+      "properties": {
+        "examMode": {
+          "type": "string",
+          "description": "Type of SIHK examination.",
+          "enum": ["BQ", "HQ", "FACHGESPRAECH"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Situationsaufgabe or Fachgespräch title."
+        },
+        "scenarioSummary": {
+          "type": "string",
+          "description": "Brief summary of the Ausgangssituation."
+        },
+        "achievedPoints": {
+          "type": "integer",
+          "description": "Achieved score from 0 to 100."
+        },
+        "maxPoints": {
+          "type": "integer",
+          "description": "Maximum points (always 100 for IHK scale)."
+        },
+        "ihkGrade": {
+          "type": "integer",
+          "description": "IHK grade from 1 (sehr gut) to 6 (ungenügend)."
+        },
+        "passed": {
+          "type": "boolean",
+          "description": "Whether the attempt reached >= 50 points."
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Actual time spent in minutes."
+        },
+        "feedbackSummary": {
+          "type": "string",
+          "description": "Expectation-horizon AI feedback summary."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "examMode",
+        "title",
+        "scenarioSummary",
+        "achievedPoints",
+        "maxPoints",
+        "ihkGrade",
+        "passed",
+        "durationMinutes",
+        "feedbackSummary",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WeaknessItem": {
+      "title": "WeaknessItem",
+      "description": "Smart Review queue entry capturing topics or questions the learner needs to repeat.",
+      "type": "object",
+      "properties": {
+        "topicId": {
+          "type": "string",
+          "description": "Curriculum topic identifier."
+        },
+        "questionKey": {
+          "type": "string",
+          "description": "Unique key of the missed question or drill."
+        },
+        "promptPreview": {
+          "type": "string",
+          "description": "Short preview of the missed concept."
+        },
+        "wrongCount": {
+          "type": "integer",
+          "description": "Number of times missed."
+        },
+        "resolved": {
+          "type": "boolean",
+          "description": "True once mastered in Smart Review."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "topicId",
+        "questionKey",
+        "promptPreview",
+        "wrongCount",
+        "resolved",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Learner profile containing XP, streaks, daily study minutes, and SIHK Meister rank."
+    },
+    "/users/{userId}/lessonProgress/{lessonId}": {
+      "schema": {
+        "$ref": "#/entities/LessonProgress"
+      },
+      "description": "Per-lesson mastery, XP earned, and completion status."
+    },
+    "/users/{userId}/formulaMastery/{formulaId}": {
+      "schema": {
+        "$ref": "#/entities/FormulaMastery"
+      },
+      "description": "Per-formula Rechen-Dojo mastery and solved counts."
+    },
+    "/users/{userId}/examAttempts/{attemptId}": {
+      "schema": {
+        "$ref": "#/entities/ExamAttempt"
+      },
+      "description": "Immutable history of SIHK exam simulations and Fachgespräch evaluations."
+    },
+    "/users/{userId}/weaknesses/{weaknessId}": {
+      "schema": {
+        "$ref": "#/entities/WeaknessItem"
+      },
+      "description": "Smart Review queue items for adaptive repetition."
+    }
+  }
+}
