@@ -1,0 +1,6 @@
+{
+  "name": "Xels Prüfungssimulator zum Logistikmeister",
+  "description": "Interaktive IHK/SIHK-Lernplattform für Geprüfte Logistikmeister mit Gamification, Formel-Rechner, Rechen-Dojo, Prüfungssimulator und KI-Prüfungsausschuss.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
